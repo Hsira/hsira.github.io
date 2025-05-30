@@ -2,7 +2,6 @@ let textChunks = [];
 let currentIndex = 0;
 let isPlaying = false;
 let utterance = null;
-let stopTimer = null;
 
 document.getElementById("fileInput").addEventListener("change", (e) => {
   const file = e.target.files[0];
@@ -15,40 +14,27 @@ document.getElementById("fileInput").addEventListener("change", (e) => {
     currentIndex = 0;
     localStorage.setItem("bookContent", JSON.stringify(textChunks));
     localStorage.setItem("lastIndex", currentIndex);
-    startReading();
+    speakChunk();
   };
   reader.readAsText(file, "utf-8");
 });
 
 document.getElementById("playBtn").addEventListener("click", () => {
   if (isPlaying) {
-    cancelReading();
+    speechSynthesis.cancel();
+    isPlaying = false;
   } else {
     if (textChunks.length === 0) {
       const saved = JSON.parse(localStorage.getItem("bookContent") || "[]");
       if (saved.length > 0) textChunks = saved;
       currentIndex = parseInt(localStorage.getItem("lastIndex") || "0");
     }
-    startReading();
+    speakChunk();
   }
 });
 
-function startReading() {
-  const minutes = parseInt(document.getElementById("timerInput").value || "0");
-  if (minutes > 0) {
-    clearTimeout(stopTimer); // 防止重复定时
-    stopTimer = setTimeout(() => {
-      cancelReading();
-      alert("⏰ 时间到，已停止朗读。");
-    }, minutes * 60 * 1000);
-  }
-  isPlaying = true;
-  speakChunk();
-}
-
 function speakChunk() {
-  if (!isPlaying || currentIndex >= textChunks.length) return;
-
+  if (currentIndex >= textChunks.length) return;
   const text = textChunks[currentIndex].trim();
   if (!text) {
     currentIndex++;
@@ -59,18 +45,11 @@ function speakChunk() {
   document.getElementById("currentText").textContent = text;
   utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = "zh-CN";
-
   utterance.onend = () => {
     currentIndex++;
     localStorage.setItem("lastIndex", currentIndex);
     if (isPlaying) speakChunk();
   };
-
   speechSynthesis.speak(utterance);
-}
-
-function cancelReading() {
-  speechSynthesis.cancel();
-  isPlaying = false;
-  clearTimeout(stopTimer);
+  isPlaying = true;
 }
