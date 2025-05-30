@@ -2,15 +2,131 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>听书工具</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>听书工具 | 小说朗读器</title>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: 2em auto; line-height: 1.6; }
+    h1 { text-align: center; }
+    select, button, input[type="file"] { margin: 0.5em 0; width: 100%; padding: 0.5em; font-size: 1em; }
+    textarea { width: 100%; height: 200px; margin-top: 1em; }
+    .controls { display: flex; gap: 10px; margin-top: 1em; }
+    .controls button { flex: 1; }
+  </style>
 </head>
 <body>
-  <h1>📖 听书工具</h1>
+  <h1>听书工具 | 小说朗读器</h1>
+
   <input type="file" id="fileInput" accept=".txt" />
-  <button id="playBtn">▶️ 播放 / 暂停</button>
-  <p id="currentText"></p>
-  <script src="script.js"></script>
+  <select id="chapterSelect"></select>
+
+  <div class="controls">
+    <button onclick="play()">▶️ 播放</button>
+    <button onclick="pause()">⏸️ 暂停</button>
+    <button onclick="stop()">⏹️ 停止</button>
+  </div>
+
+  <label for="timer">朗读时长（分钟）：</label>
+  <input type="number" id="timer" value="30" min="1" max="180"/>
+
+  <textarea id="textDisplay" readonly></textarea>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const chapterSelect = document.getElementById('chapterSelect');
+    const textDisplay = document.getElementById('textDisplay');
+    const timerInput = document.getElementById('timer');
+
+    let chapters = [];
+    let currentChapter = 0;
+    let synth = window.speechSynthesis;
+    let utterance;
+    let timer = null;
+
+    // 加载本地保存的章节记录
+    window.onload = () => {
+      const saved = localStorage.getItem('lastChapter');
+      if (saved) currentChapter = parseInt(saved);
+    };
+
+    fileInput.addEventListener('change', async () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+      const text = await file.text();
+      splitChapters(text);
+    });
+
+    function splitChapters(text) {
+      chapters = [];
+      const lines = text.split(/\r?\n/);
+      let current = { title: '开始', content: '' };
+
+      for (let line of lines) {
+        if (/^第.{1,9}[章回节]/.test(line.trim())) {
+          if (current.content) chapters.push(current);
+          current = { title: line.trim(), content: '' };
+        } else {
+          current.content += line + '\n';
+        }
+      }
+      if (current.content) chapters.push(current);
+      populateSelect();
+      showChapter(currentChapter);
+    }
+
+    function populateSelect() {
+      chapterSelect.innerHTML = '';
+      chapters.forEach((chap, i) => {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = chap.title;
+        chapterSelect.appendChild(opt);
+      });
+      chapterSelect.value = currentChapter;
+    }
+
+    chapterSelect.addEventListener('change', () => {
+      currentChapter = parseInt(chapterSelect.value);
+      showChapter(currentChapter);
+      localStorage.setItem('lastChapter', currentChapter);
+    });
+
+    function showChapter(index) {
+      if (chapters[index]) {
+        textDisplay.value = chapters[index].content;
+      }
+    }
+
+    function play() {
+      if (synth.speaking) return;
+
+      utterance = new SpeechSynthesisUtterance(chapters[currentChapter].content);
+      utterance.lang = 'zh-CN';
+      synth.speak(utterance);
+
+      // 保存当前位置
+      localStorage.setItem('lastChapter', currentChapter);
+
+      // 定时器
+      const minutes = parseInt(timerInput.value);
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        synth.cancel();
+        alert('朗读时间已到，已自动停止。');
+      }, minutes * 60000);
+    }
+
+    function pause() {
+      if (synth.speaking && !synth.paused) {
+        synth.pause();
+      } else if (synth.paused) {
+        synth.resume();
+      }
+    }
+
+    function stop() {
+      synth.cancel();
+      if (timer) clearTimeout(timer);
+    }
+  </script>
 </body>
 </html>
