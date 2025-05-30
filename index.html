@@ -1,132 +1,161 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>听书工具 | 小说朗读器</title>
+  <title>听书小助手</title>
   <style>
-    body { font-family: sans-serif; max-width: 800px; margin: 2em auto; line-height: 1.6; }
-    h1 { text-align: center; }
-    select, button, input[type="file"] { margin: 0.5em 0; width: 100%; padding: 0.5em; font-size: 1em; }
-    textarea { width: 100%; height: 200px; margin-top: 1em; }
-    .controls { display: flex; gap: 10px; margin-top: 1em; }
-    .controls button { flex: 1; }
+    body { max-width: 700px; margin: auto; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; padding: 20px;}
+    textarea { width: 100%; height: 200px; margin-top: 10px; }
+    select, input, button { margin: 5px 0; }
   </style>
 </head>
 <body>
-  <h1>听书工具 | 小说朗读器</h1>
+  <h1>听书小助手</h1>
 
-  <input type="file" id="fileInput" accept=".txt" />
+  <label for="novelSelect">选择小说：</label>
+  <select id="novelSelect"></select>
+
+  <br/>
+
+  <label for="chapterSelect">选择章节：</label>
   <select id="chapterSelect"></select>
 
-  <div class="controls">
-    <button onclick="play()">▶️ 播放</button>
-    <button onclick="pause()">⏸️ 暂停</button>
-    <button onclick="stop()">⏹️ 停止</button>
-  </div>
-
-  <label for="timer">朗读时长（分钟）：</label>
-  <input type="number" id="timer" value="30" min="1" max="180"/>
+  <br/>
 
   <textarea id="textDisplay" readonly></textarea>
 
-  <script>
-    const fileInput = document.getElementById('fileInput');
-    const chapterSelect = document.getElementById('chapterSelect');
-    const textDisplay = document.getElementById('textDisplay');
-    const timerInput = document.getElementById('timer');
+  <br/>
 
-    let chapters = [];
-    let currentChapter = 0;
-    let synth = window.speechSynthesis;
-    let utterance;
-    let timer = null;
+  <label for="timer">定时朗读时间（分钟，0不定时）：</label>
+  <input type="number" id="timer" value="0" min="0" />
 
-    // 加载本地保存的章节记录
-    window.onload = () => {
-      const saved = localStorage.getItem('lastChapter');
-      if (saved) currentChapter = parseInt(saved);
-    };
+  <br/>
 
-    fileInput.addEventListener('change', async () => {
-      const file = fileInput.files[0];
-      if (!file) return;
-      const text = await file.text();
+  <button onclick="play()">播放</button>
+  <button onclick="pause()">暂停/继续</button>
+  <button onclick="stop()">停止</button>
+
+<script>
+  const novelFiles = [
+    "novel1.txt",
+    "novel2.txt",
+    "novel3.txt"
+  ];
+
+  const novelSelect = document.getElementById("novelSelect");
+  const chapterSelect = document.getElementById("chapterSelect");
+  const textDisplay = document.getElementById("textDisplay");
+  const timerInput = document.getElementById("timer");
+
+  let chapters = [];
+  let currentChapter = 0;
+  let synth = window.speechSynthesis;
+  let utterance;
+  let timer = null;
+
+  // 初始化小说选择列表
+  function initNovelSelect() {
+    novelFiles.forEach((file, i) => {
+      const option = document.createElement("option");
+      option.value = file;
+      option.textContent = file;
+      novelSelect.appendChild(option);
+    });
+  }
+
+  novelSelect.addEventListener("change", () => {
+    loadNovel(novelSelect.value);
+  });
+
+  chapterSelect.addEventListener("change", () => {
+    currentChapter = parseInt(chapterSelect.value);
+    showChapter(currentChapter);
+  });
+
+  // 加载小说TXT
+  async function loadNovel(fileName) {
+    try {
+      const response = await fetch(fileName);
+      if (!response.ok) throw new Error("加载失败");
+      const text = await response.text();
       splitChapters(text);
-    });
-
-    function splitChapters(text) {
-      chapters = [];
-      const lines = text.split(/\r?\n/);
-      let current = { title: '开始', content: '' };
-
-      for (let line of lines) {
-        if (/^第.{1,9}[章回节]/.test(line.trim())) {
-          if (current.content) chapters.push(current);
-          current = { title: line.trim(), content: '' };
-        } else {
-          current.content += line + '\n';
-        }
-      }
-      if (current.content) chapters.push(current);
-      populateSelect();
-      showChapter(currentChapter);
-    }
-
-    function populateSelect() {
-      chapterSelect.innerHTML = '';
-      chapters.forEach((chap, i) => {
-        const opt = document.createElement('option');
-        opt.value = i;
-        opt.textContent = chap.title;
-        chapterSelect.appendChild(opt);
-      });
+      currentChapter = 0;
       chapterSelect.value = currentChapter;
-    }
-
-    chapterSelect.addEventListener('change', () => {
-      currentChapter = parseInt(chapterSelect.value);
       showChapter(currentChapter);
-      localStorage.setItem('lastChapter', currentChapter);
-    });
+    } catch (e) {
+      alert("加载小说失败：" + e.message);
+    }
+  }
 
-    function showChapter(index) {
-      if (chapters[index]) {
-        textDisplay.value = chapters[index].content;
+  // 分章节
+  function splitChapters(text) {
+    chapters = [];
+    const lines = text.split(/\r?\n/);
+    let current = { title: "开始", content: "" };
+    for (let line of lines) {
+      if (/^第.{1,9}[章回节].*/.test(line.trim())) {
+        if (current.content) chapters.push(current);
+        current = { title: line.trim(), content: "" };
+      } else {
+        current.content += line + "\n";
       }
     }
+    if (current.content) chapters.push(current);
+    populateChapterSelect();
+  }
 
-    function play() {
-      if (synth.speaking) return;
+  // 填充章节选择
+  function populateChapterSelect() {
+    chapterSelect.innerHTML = "";
+    chapters.forEach((chap, i) => {
+      const opt = document.createElement("option");
+      opt.value = i;
+      opt.textContent = chap.title;
+      chapterSelect.appendChild(opt);
+    });
+  }
 
-      utterance = new SpeechSynthesisUtterance(chapters[currentChapter].content);
-      utterance.lang = 'zh-CN';
-      synth.speak(utterance);
+  function showChapter(index) {
+    if (chapters[index]) {
+      textDisplay.value = chapters[index].content;
+    }
+  }
 
-      // 保存当前位置
-      localStorage.setItem('lastChapter', currentChapter);
+  // 朗读控制
+  function play() {
+    if (synth.speaking) return;
+    if (!chapters[currentChapter]) return;
+    utterance = new SpeechSynthesisUtterance(chapters[currentChapter].content);
+    utterance.lang = "zh-CN";
+    synth.speak(utterance);
 
-      // 定时器
-      const minutes = parseInt(timerInput.value);
-      if (timer) clearTimeout(timer);
+    if (timer) clearTimeout(timer);
+    const minutes = parseInt(timerInput.value);
+    if (minutes > 0) {
       timer = setTimeout(() => {
         synth.cancel();
-        alert('朗读时间已到，已自动停止。');
+        alert("朗读时间已到，已自动停止。");
       }, minutes * 60000);
     }
+  }
 
-    function pause() {
-      if (synth.speaking && !synth.paused) {
-        synth.pause();
-      } else if (synth.paused) {
-        synth.resume();
-      }
+  function pause() {
+    if (synth.speaking && !synth.paused) {
+      synth.pause();
+    } else if (synth.paused) {
+      synth.resume();
     }
+  }
 
-    function stop() {
-      synth.cancel();
-      if (timer) clearTimeout(timer);
-    }
-  </script>
+  function stop() {
+    synth.cancel();
+    if (timer) clearTimeout(timer);
+  }
+
+  // 页面初始化
+  initNovelSelect();
+  // 默认加载第一本小说
+  loadNovel(novelFiles[0]);
+</script>
 </body>
 </html>
