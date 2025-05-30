@@ -1,14 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>听书工具</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
 <body>
   <h1>📖 听书工具</h1>
-  <input type="file" id="fileInput" accept=".txt" />
   
-  <!-- 新增：定时输入框 -->
-  <label>
-    朗读时长（分钟）：
-    <input type="number" id="durationInput" value="30" min="1" style="width: 60px;" />
-  </label>
+  <label>上传小说（TXT）文件：</label><br />
+  <input type="file" id="fileInput" accept=".txt" /><br /><br />
+
+  <label>设置朗读时长（分钟）：</label>
+  <input type="number" id="durationInput" min="1" value="30" style="width: 60px;" />
+  <span>分钟</span><br /><br />
 
   <button id="playBtn">▶️ 播放 / 暂停</button>
+  <p id="statusText"></p>
   <p id="currentText"></p>
+
   <script src="script.js"></script>
 </body>
+</html>
