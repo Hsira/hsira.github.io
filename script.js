@@ -2,15 +2,9 @@ let textChunks = [];
 let currentIndex = 0;
 let isPlaying = false;
 let utterance = null;
-let stopTimeout = null;
+let stopTimer = null;
 
-const fileInput = document.getElementById("fileInput");
-const playBtn = document.getElementById("playBtn");
-const durationInput = document.getElementById("durationInput");
-const currentText = document.getElementById("currentText");
-const statusText = document.getElementById("statusText");
-
-fileInput.addEventListener("change", (e) => {
+document.getElementById("fileInput").addEventListener("change", (e) => {
   const file = e.target.files[0];
   if (!file) return;
 
@@ -26,7 +20,7 @@ fileInput.addEventListener("change", (e) => {
   reader.readAsText(file, "utf-8");
 });
 
-playBtn.addEventListener("click", () => {
+document.getElementById("playBtn").addEventListener("click", () => {
   if (isPlaying) {
     stopReading();
   } else {
@@ -40,29 +34,29 @@ playBtn.addEventListener("click", () => {
 });
 
 function startReading() {
-  const durationMinutes = parseInt(durationInput.value || "30");
-  const durationMs = durationMinutes * 60 * 1000;
+  const durationMinutes = parseInt(document.getElementById("durationInput").value);
+  if (!isNaN(durationMinutes) && durationMinutes > 0) {
+    // 清除旧定时器
+    if (stopTimer) clearTimeout(stopTimer);
 
-  // 先停止以前的超时
-  clearTimeout(stopTimeout);
+    // 设置新定时器
+    stopTimer = setTimeout(() => {
+      stopReading();
+      alert(`⏱️ ${durationMinutes} 分钟已到，朗读已自动停止`);
+    }, durationMinutes * 60 * 1000);
+  }
 
-  // 启动朗读
-  statusText.textContent = `朗读中，将在 ${durationMinutes} 分钟后停止`;
   isPlaying = true;
   speakChunk();
-
-  // 设置定时停止
-  stopTimeout = setTimeout(() => {
-    stopReading();
-    statusText.textContent = `✅ 已达设定时间（${durationMinutes} 分钟），朗读已自动停止`;
-  }, durationMs);
 }
 
 function stopReading() {
   speechSynthesis.cancel();
   isPlaying = false;
-  clearTimeout(stopTimeout);
-  statusText.textContent = "⏸️ 已暂停朗读";
+  if (stopTimer) {
+    clearTimeout(stopTimer);
+    stopTimer = null;
+  }
 }
 
 function speakChunk() {
@@ -75,7 +69,8 @@ function speakChunk() {
     return;
   }
 
-  currentText.textContent = text;
+  document.getElementById("currentText").textContent = text;
+
   utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = "zh-CN";
   utterance.onend = () => {
@@ -83,5 +78,6 @@ function speakChunk() {
     localStorage.setItem("lastIndex", currentIndex);
     if (isPlaying) speakChunk();
   };
+
   speechSynthesis.speak(utterance);
 }
