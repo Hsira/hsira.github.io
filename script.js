@@ -2,6 +2,7 @@ let textChunks = [];
 let currentIndex = 0;
 let isPlaying = false;
 let utterance = null;
+let stopTimer = null;  // 新增：定时器 ID
 
 document.getElementById("fileInput").addEventListener("change", (e) => {
   const file = e.target.files[0];
@@ -21,14 +22,21 @@ document.getElementById("fileInput").addEventListener("change", (e) => {
 
 document.getElementById("playBtn").addEventListener("click", () => {
   if (isPlaying) {
-    speechSynthesis.cancel();
-    isPlaying = false;
+    stopReading();
   } else {
-    if (textChunks.length === 0) {
-      const saved = JSON.parse(localStorage.getItem("bookContent") || "[]");
-      if (saved.length > 0) textChunks = saved;
-      currentIndex = parseInt(localStorage.getItem("lastIndex") || "0");
+    const saved = JSON.parse(localStorage.getItem("bookContent") || "[]");
+    if (saved.length > 0) textChunks = saved;
+    currentIndex = parseInt(localStorage.getItem("lastIndex") || "0");
+
+    const durationInput = document.getElementById("durationInput").value;
+    const minutes = parseInt(durationInput);
+    if (minutes > 0) {
+      stopTimer = setTimeout(() => {
+        stopReading();
+        alert("⏰ 朗读已达设定时间，已自动停止。");
+      }, minutes * 60 * 1000);
     }
+
     speakChunk();
   }
 });
@@ -52,4 +60,13 @@ function speakChunk() {
   };
   speechSynthesis.speak(utterance);
   isPlaying = true;
+}
+
+function stopReading() {
+  speechSynthesis.cancel();
+  isPlaying = false;
+  if (stopTimer) {
+    clearTimeout(stopTimer);
+    stopTimer = null;
+  }
 }
