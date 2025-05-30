@@ -22,7 +22,7 @@ document.getElementById("fileInput").addEventListener("change", (e) => {
 
 document.getElementById("playBtn").addEventListener("click", () => {
   if (isPlaying) {
-    stopReading();
+    cancelReading();
   } else {
     if (textChunks.length === 0) {
       const saved = JSON.parse(localStorage.getItem("bookContent") || "[]");
@@ -34,29 +34,16 @@ document.getElementById("playBtn").addEventListener("click", () => {
 });
 
 function startReading() {
-  const durationMinutes = parseInt(document.getElementById("durationInput").value);
-  if (!isNaN(durationMinutes) && durationMinutes > 0) {
-    // 清除旧定时器
-    if (stopTimer) clearTimeout(stopTimer);
-
-    // 设置新定时器
+  const minutes = parseInt(document.getElementById("timerInput").value || "0");
+  if (minutes > 0) {
+    clearTimeout(stopTimer); // 防止重复定时
     stopTimer = setTimeout(() => {
-      stopReading();
-      alert(`⏱️ ${durationMinutes} 分钟已到，朗读已自动停止`);
-    }, durationMinutes * 60 * 1000);
+      cancelReading();
+      alert("⏰ 时间到，已停止朗读。");
+    }, minutes * 60 * 1000);
   }
-
   isPlaying = true;
   speakChunk();
-}
-
-function stopReading() {
-  speechSynthesis.cancel();
-  isPlaying = false;
-  if (stopTimer) {
-    clearTimeout(stopTimer);
-    stopTimer = null;
-  }
 }
 
 function speakChunk() {
@@ -70,9 +57,9 @@ function speakChunk() {
   }
 
   document.getElementById("currentText").textContent = text;
-
   utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = "zh-CN";
+
   utterance.onend = () => {
     currentIndex++;
     localStorage.setItem("lastIndex", currentIndex);
@@ -80,4 +67,10 @@ function speakChunk() {
   };
 
   speechSynthesis.speak(utterance);
+}
+
+function cancelReading() {
+  speechSynthesis.cancel();
+  isPlaying = false;
+  clearTimeout(stopTimer);
 }
