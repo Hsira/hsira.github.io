@@ -140,30 +140,46 @@
   }
 
   // 朗读控制
-  function play() {
-    if (synth.speaking) return;
-    if (!chapters[currentChapter]) return;
-    utterance = new SpeechSynthesisUtterance(chapters[currentChapter].content);
-    utterance.lang = "zh-CN";
-    synth.speak(utterance);
+function play() {
+  if (synth.speaking || synth.pending) {
+    synth.cancel(); // 防止旧的未结束
+  }
 
+  const content = chapters[currentChapter]?.content;
+  if (!content) return;
+
+  utterance = new SpeechSynthesisUtterance(content);
+  utterance.lang = "zh-CN";
+
+  // 防止语音失效：绑定结束事件
+  utterance.onend = () => {
+    utterance = null;
     if (timer) clearTimeout(timer);
-    const minutes = parseInt(timerInput.value);
-    if (minutes > 0) {
-      timer = setTimeout(() => {
-        synth.cancel();
-        alert("朗读时间已到，已自动停止。");
-      }, minutes * 60000);
-    }
-  }
+  };
 
-  function pause() {
-    if (synth.speaking && !synth.paused) {
-      synth.pause();
-    } else if (synth.paused) {
-      synth.resume();
-    }
+  // 确保语音播放成功（特别是 iOS）
+  setTimeout(() => synth.speak(utterance), 100);
+
+  // 定时自动停止
+  if (timer) clearTimeout(timer);
+  const minutes = parseInt(timerInput.value);
+  if (minutes > 0) {
+    timer = setTimeout(() => {
+      synth.cancel();
+      alert("朗读时间已到，已自动停止。");
+    }, minutes * 60000);
   }
+}
+
+
+function pause() {
+  if (synth.speaking && !synth.paused) {
+    synth.pause();
+  } else if (synth.paused) {
+    synth.resume();
+  }
+}
+
 
   function stop() {
     synth.cancel();
