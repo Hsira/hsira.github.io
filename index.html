@@ -144,14 +144,19 @@
 
     function splitChapters(text) {
       chapters = [];
+      const singleRe   = /^第[\u4e00-\u9fa5\d]{1,30}(?:章|回|节|集).*$/;
+      const volChapRe  = /^第[\u4e00-\u9fa5\d]{1,30}卷.*?第[\u4e00-\u9fa5\d]{1,30}(?:章|回|节|集).*$/;
+
       const lines = text.split(/\r?\n/);
       let current = { title: "开始", content: "" };
-      for (let line of lines) {
-        if (/^第.{1,9}[章回节].*/.test(line.trim())) {
+
+      for (const raw of lines) {
+        const line = raw.trim();
+        if (singleRe.test(line) || volChapRe.test(line)) {
           if (current.content) chapters.push(current);
-          current = { title: line.trim(), content: "" };
+          current = { title: line, content: "" };
         } else {
-          current.content += line + "\n";
+          current.content += raw + "\n";
         }
       }
       if (current.content) chapters.push(current);
