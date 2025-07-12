@@ -109,9 +109,10 @@
     let synth = window.speechSynthesis;
     let utterance;
     let timer = null;
+    let endTime = null;
 
     function initNovelSelect() {
-      novelFiles.forEach((file, i) => {
+      novelFiles.forEach((file) => {
         const option = document.createElement("option");
         option.value = file;
         option.textContent = file;
@@ -144,8 +145,8 @@
 
     function splitChapters(text) {
       chapters = [];
-      const singleRe   = /^第[\u4e00-\u9fa5\d]{1,30}(?:章|回|节|集).*$/;
-      const volChapRe  = /^第[\u4e00-\u9fa5\d]{1,30}卷.*?第[\u4e00-\u9fa5\d]{1,30}(?:章|回|节|集).*$/;
+      const singleRe = /^第[\u4e00-\u9fa5\d]{1,30}(?:章|回|节|集).*$/;
+      const volChapRe = /^第[\u4e00-\u9fa5\d]{1,30}卷.*?第[\u4e00-\u9fa5\d]{1,30}(?:章|回|节|集).*$/;
 
       const lines = text.split(/\r?\n/);
       let current = { title: "开始", content: "" };
@@ -180,31 +181,35 @@
     }
 
     function play() {
-      if (synth.speaking || synth.pending) {
-        synth.cancel();
+      if (synth.speaking || synth.pending) synth.cancel();
+      const minutes = parseInt(timerInput.value);
+      endTime = minutes > 0 ? Date.now() + minutes * 60000 : null;
+      speakNextChapter(currentChapter);
+    }
+
+    function speakNextChapter(index) {
+      if (endTime && Date.now() >= endTime) {
+        alert("朗读时间已到，已自动停止。");
+        return;
       }
 
-      const content = chapters[currentChapter]?.content;
-      if (!content) return;
+      if (!chapters[index]) return;
+      currentChapter = index;
+      chapterSelect.value = index;
+      textDisplay.value = chapters[index].content;
 
-      utterance = new SpeechSynthesisUtterance(content);
+      utterance = new SpeechSynthesisUtterance(chapters[index].content);
       utterance.lang = "zh-CN";
 
       utterance.onend = () => {
         utterance = null;
-        if (timer) clearTimeout(timer);
+        if (synth.paused) return; // 如果被手动暂停就不自动播下一章
+        if (endTime && Date.now() < endTime) {
+          speakNextChapter(currentChapter + 1);
+        }
       };
 
-      setTimeout(() => synth.speak(utterance), 100);
-
-      if (timer) clearTimeout(timer);
-      const minutes = parseInt(timerInput.value);
-      if (minutes > 0) {
-        timer = setTimeout(() => {
-          synth.cancel();
-          alert("朗读时间已到，已自动停止。");
-        }, minutes * 60000);
-      }
+      synth.speak(utterance);
     }
 
     function pause() {
@@ -218,6 +223,7 @@
     function stop() {
       synth.cancel();
       if (timer) clearTimeout(timer);
+      endTime = null;
     }
 
     initNovelSelect();
