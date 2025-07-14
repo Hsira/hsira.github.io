@@ -91,12 +91,12 @@
   <textarea id="textDisplay" readonly></textarea>
 
   <script>
-    const novelFiles = [
-      "novel1.txt", "part_1.txt", "part_2.txt", "part_3.txt", "part_4.txt",
-      "part_5.txt", "part_6.txt", "part_7.txt", "part_8.txt", "part_9.txt",
-      "part_10.txt", "part_11.txt", "part_12.txt", "part_13.txt", "part_14.txt",
-      "part_15.txt", "part_16.txt", "part_17.txt", "part_18.txt", "part_19.txt", "part_20.txt",
-      "fanren500.txt","fanren1000.txt","fanren1500.txt","fanren2000.txt","fanren2464.txt"
+    const GITHUB_USER = "hsira";
+    const GITHUB_REPO = "hsira.github.io";
+    const GITHUB_PATH = "";
+
+    const fallbackFiles = [
+      "novel1.txt", "part_1.txt", "part_2.txt", "fanren2464.txt"
     ];
 
     const novelSelect = document.getElementById("novelSelect");
@@ -106,38 +106,52 @@
 
     let chapters = [];
     let currentChapter = 0;
-    let synth = window.speechSynthesis;
-    let utterance;
-    let timer = null;
+    const synth = window.speechSynthesis;
+    let utterance = null;
     let endTime = null;
 
-    function initNovelSelect() {
-      novelFiles.forEach((file) => {
-        const option = document.createElement("option");
-        option.value = file;
-        option.textContent = file;
-        novelSelect.appendChild(option);
-      });
+    async function fetchNovelFiles() {
+      const api = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${GITHUB_PATH}`;
+      try {
+        const res = await fetch(api);
+        if (!res.ok) throw new Error("GitHub API 请求失败");
+        const data = await res.json();
+        return data
+          .filter(item => item.type === "file" && item.name.endsWith(".txt"))
+          .map(item => ({ name: item.name, url: item.download_url }));
+      } catch (e) {
+        console.warn("⚠️ 使用后备列表，原因：", e.message);
+        return fallbackFiles.map(f => ({ name: f, url: f }));
+      }
     }
 
-    novelSelect.addEventListener("change", () => {
+    async function initNovelSelect() {
+      const fileList = await fetchNovelFiles();
+      novelSelect.innerHTML = "";
+      fileList.forEach((file, i) => {
+        const opt = document.createElement("option");
+        opt.value = file.url;
+        opt.textContent = file.name;
+        novelSelect.appendChild(opt);
+      });
       loadNovel(novelSelect.value);
-    });
+    }
 
+    novelSelect.addEventListener("change", () => loadNovel(novelSelect.value));
     chapterSelect.addEventListener("change", () => {
       currentChapter = parseInt(chapterSelect.value);
       showChapter(currentChapter);
     });
 
-    async function loadNovel(fileName) {
+    async function loadNovel(fileURL) {
       try {
-        const response = await fetch(fileName);
-        if (!response.ok) throw new Error("加载失败");
-        const text = await response.text();
+        const res = await fetch(fileURL);
+        if (!res.ok) throw new Error("加载失败");
+        const text = await res.text();
         splitChapters(text);
         currentChapter = 0;
-        chapterSelect.value = currentChapter;
-        showChapter(currentChapter);
+        chapterSelect.value = 0;
+        showChapter(0);
       } catch (e) {
         alert("加载小说失败：" + e.message);
       }
@@ -147,37 +161,34 @@
       chapters = [];
       const singleRe = /^第[\u4e00-\u9fa5\d]{1,30}(?:章|回|节|集).*$/;
       const volChapRe = /^第[\u4e00-\u9fa5\d]{1,30}卷.*?第[\u4e00-\u9fa5\d]{1,30}(?:章|回|节|集).*$/;
-
       const lines = text.split(/\r?\n/);
-      let current = { title: "开始", content: "" };
+      let cur = { title: "开始", content: "" };
 
       for (const raw of lines) {
         const line = raw.trim();
         if (singleRe.test(line) || volChapRe.test(line)) {
-          if (current.content) chapters.push(current);
-          current = { title: line, content: "" };
+          if (cur.content) chapters.push(cur);
+          cur = { title: line, content: "" };
         } else {
-          current.content += raw + "\n";
+          cur.content += raw + "\n";
         }
       }
-      if (current.content) chapters.push(current);
+      if (cur.content) chapters.push(cur);
       populateChapterSelect();
     }
 
     function populateChapterSelect() {
       chapterSelect.innerHTML = "";
-      chapters.forEach((chap, i) => {
+      chapters.forEach((c, i) => {
         const opt = document.createElement("option");
         opt.value = i;
-        opt.textContent = chap.title;
+        opt.textContent = c.title;
         chapterSelect.appendChild(opt);
       });
     }
 
-    function showChapter(index) {
-      if (chapters[index]) {
-        textDisplay.value = chapters[index].content;
-      }
+    function showChapter(i) {
+      if (chapters[i]) textDisplay.value = chapters[i].content;
     }
 
     function play() {
@@ -187,28 +198,22 @@
       speakNextChapter(currentChapter);
     }
 
-    function speakNextChapter(index) {
+    function speakNextChapter(idx) {
       if (endTime && Date.now() >= endTime) {
         alert("朗读时间已到，已自动停止。");
         return;
       }
+      if (!chapters[idx]) return;
+      currentChapter = idx;
+      chapterSelect.value = idx;
+      textDisplay.value = chapters[idx].content;
 
-      if (!chapters[index]) return;
-      currentChapter = index;
-      chapterSelect.value = index;
-      textDisplay.value = chapters[index].content;
-
-      utterance = new SpeechSynthesisUtterance(chapters[index].content);
+      utterance = new SpeechSynthesisUtterance(chapters[idx].content);
       utterance.lang = "zh-CN";
-
       utterance.onend = () => {
-        utterance = null;
-        if (synth.paused) return; // 如果被手动暂停就不自动播下一章
-        if (endTime && Date.now() < endTime) {
-          speakNextChapter(currentChapter + 1);
-        }
+        if (!synth.paused && (!endTime || Date.now() < endTime))
+          speakNextChapter(idx + 1);
       };
-
       synth.speak(utterance);
     }
 
@@ -222,12 +227,10 @@
 
     function stop() {
       synth.cancel();
-      if (timer) clearTimeout(timer);
       endTime = null;
     }
 
     initNovelSelect();
-    loadNovel(novelFiles[0]);
   </script>
 </body>
 </html>
