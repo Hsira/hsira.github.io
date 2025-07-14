@@ -70,14 +70,17 @@
   <h1>📖 听书小助手</h1>
 
   <div class="controls">
-    <label for="novelSelect">📘 选择小说：</label>
-    <select id="novelSelect"></select>
+    <label for="folderSelect">📚 选择小说：</label>
+    <select id="folderSelect"></select>
 
-    <label for="chapterSelect">📄 选择章节：</label>
-    <select id="chapterSelect"></select>
+    <label for="novelSelect">📄 选择文件：</label>
+    <select id="novelSelect"></select>
   </div>
 
   <div class="controls">
+    <label for="chapterSelect">📑 选择章节：</label>
+    <select id="chapterSelect"></select>
+
     <label for="timer">⏱️ 定时朗读（分钟）：</label>
     <input type="number" id="timer" value="0" min="0" />
   </div>
@@ -93,12 +96,9 @@
   <script>
     const GITHUB_USER = "hsira";
     const GITHUB_REPO = "hsira.github.io";
-    const GITHUB_PATH = "";
+    const GITHUB_PATH = "novels"; // 所有小说放在 /novels 文件夹下
 
-    const fallbackFiles = [
-      "novel1.txt", "part_1.txt", "part_2.txt", "fanren2464.txt"
-    ];
-
+    const folderSelect = document.getElementById("folderSelect");
     const novelSelect = document.getElementById("novelSelect");
     const chapterSelect = document.getElementById("chapterSelect");
     const textDisplay = document.getElementById("textDisplay");
@@ -110,34 +110,56 @@
     let utterance = null;
     let endTime = null;
 
-    async function fetchNovelFiles() {
-      const api = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${GITHUB_PATH}`;
-      try {
-        const res = await fetch(api);
-        if (!res.ok) throw new Error("GitHub API 请求失败");
-        const data = await res.json();
-        return data
-          .filter(item => item.type === "file" && item.name.endsWith(".txt"))
-          .map(item => ({ name: item.name, url: item.download_url }));
-      } catch (e) {
-        console.warn("⚠️ 使用后备列表，原因：", e.message);
-        return fallbackFiles.map(f => ({ name: f, url: f }));
-      }
+    async function listFolders() {
+      const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${GITHUB_PATH}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      return data.filter(item => item.type === "dir").map(item => item.name);
     }
 
-    async function initNovelSelect() {
-      const fileList = await fetchNovelFiles();
+    async function listTxtFiles(folderName) {
+      const path = `${GITHUB_PATH}/${folderName}`;
+      const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${path}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      return data.filter(item => item.name.endsWith(".txt")).map(item => ({
+        name: item.name,
+        url: item.download_url
+      }));
+    }
+
+    async function initFolderSelect() {
+      const folders = await listFolders();
+      folderSelect.innerHTML = "";
+      folders.forEach(folder => {
+        const opt = document.createElement("option");
+        opt.value = folder;
+        opt.textContent = folder;
+        folderSelect.appendChild(opt);
+      });
+      await updateNovelSelect(folderSelect.value);
+    }
+
+    folderSelect.addEventListener("change", async () => {
+      await updateNovelSelect(folderSelect.value);
+    });
+
+    async function updateNovelSelect(folderName) {
+      const files = await listTxtFiles(folderName);
       novelSelect.innerHTML = "";
-      fileList.forEach((file, i) => {
+      files.forEach(file => {
         const opt = document.createElement("option");
         opt.value = file.url;
         opt.textContent = file.name;
         novelSelect.appendChild(opt);
       });
-      loadNovel(novelSelect.value);
+      if (files.length > 0) loadNovel(files[0].url);
     }
 
-    novelSelect.addEventListener("change", () => loadNovel(novelSelect.value));
+    novelSelect.addEventListener("change", () => {
+      loadNovel(novelSelect.value);
+    });
+
     chapterSelect.addEventListener("change", () => {
       currentChapter = parseInt(chapterSelect.value);
       showChapter(currentChapter);
@@ -159,8 +181,8 @@
 
     function splitChapters(text) {
       chapters = [];
-      const singleRe = /^第[\u4e00-\u9fa5\d]{1,30}(?:章|回|节|集).*$/;
-      const volChapRe = /^第[\u4e00-\u9fa5\d]{1,30}卷.*?第[\u4e00-\u9fa5\d]{1,30}(?:章|回|节|集).*$/;
+      const singleRe = /^第[\u4e00-\u9fa5\d]{1,30}(章|回|节|集).*$/;
+      const volChapRe = /^第[\u4e00-\u9fa5\d]{1,30}卷.*?第[\u4e00-\u9fa5\d]{1,30}(章|回|节|集).*$/;
       const lines = text.split(/\r?\n/);
       let cur = { title: "开始", content: "" };
 
@@ -230,7 +252,7 @@
       endTime = null;
     }
 
-    initNovelSelect();
+    initFolderSelect();
   </script>
 </body>
 </html>
