@@ -4,85 +4,140 @@
   <meta charset="UTF-8" />
   <title>听书小助手</title>
   <style>
-    /* ... 样式同前，略 ... */
+    body {
+      max-width: 700px;
+      margin: auto;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .controls label {
+      margin-right: 5px;
+      white-space: nowrap;
+    }
+
+    select, input[type="number"] {
+      padding: 6px;
+      font-size: 14px;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 10px 16px;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      background-color: #4CAF50;
+      color: white;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    textarea {
+      width: 100%;
+      height: 60vh;
+      margin-top: 10px;
+      padding: 10px;
+      font-size: 15px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
   </style>
 </head>
 <body>
-  <!-- 标题 / 控件 / 按钮 / textarea 与之前相同，略 -->
+  <h1>📖 听书小助手</h1>
+
+  <div class="controls">
+    <label for="novelSelect">📘 选择小说：</label>
+    <select id="novelSelect"></select>
+
+    <label for="chapterSelect">📄 选择章节：</label>
+    <select id="chapterSelect"></select>
+  </div>
+
+  <div class="controls">
+    <label for="timer">⏱️ 定时朗读（分钟）：</label>
+    <input type="number" id="timer" value="0" min="0" />
+  </div>
+
+  <div class="btn-group">
+    <button onclick="play()">▶️ 播放</button>
+    <button onclick="pause()">⏸️ 暂停 / 继续</button>
+    <button onclick="stop()">⏹️ 停止</button>
+  </div>
+
+  <textarea id="textDisplay" readonly></textarea>
 
   <script>
-    /* ---------- ① GitHub 配置 ---------- */
-    const GITHUB_USER = "hsira";             // ← 改成你的用户名
-    const GITHUB_REPO = "hsira.github.io";   // ← 改成你的仓库
-    const GITHUB_PATH = "";                  // ← txt 所在目录，无则留空
-
-    /* ---------- ② 后备硬编码列表 ---------- */
-    const fallbackFiles = [
-      "novel1.txt", "part_1.txt", /* ... 你原来那堆 ... */
-      "fanren2464.txt"
+    const novelFiles = [
+      "novel1.txt", "part_1.txt", "part_2.txt", "part_3.txt", "part_4.txt",
+      "part_5.txt", "part_6.txt", "part_7.txt", "part_8.txt", "part_9.txt",
+      "part_10.txt", "part_11.txt", "part_12.txt", "part_13.txt", "part_14.txt",
+      "part_15.txt", "part_16.txt", "part_17.txt", "part_18.txt", "part_19.txt", "part_20.txt",
+      "fanren500.txt","fanren1000.txt","fanren1500.txt","fanren2000.txt","fanren2464.txt"
     ];
 
-    /* ---------- ③ DOM 句柄 ---------- */
-    const novelSelect   = document.getElementById("novelSelect");
+    const novelSelect = document.getElementById("novelSelect");
     const chapterSelect = document.getElementById("chapterSelect");
-    const textDisplay   = document.getElementById("textDisplay");
-    const timerInput    = document.getElementById("timer");
+    const textDisplay = document.getElementById("textDisplay");
+    const timerInput = document.getElementById("timer");
 
-    /* ---------- ④ 全局状态 ---------- */
     let chapters = [];
     let currentChapter = 0;
-    const synth = window.speechSynthesis;
-    let utterance = null;
+    let synth = window.speechSynthesis;
+    let utterance;
+    let timer = null;
     let endTime = null;
 
-    /* ---------- ⑤ 动态获取文件列表 ---------- */
-    async function fetchNovelFiles() {
-      const api = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${GITHUB_PATH}`;
-      try {
-        const res = await fetch(api);
-        if (!res.ok) throw new Error("GitHub API 请求失败");
-        const data = await res.json();
-        // 过滤 txt
-        return data
-          .filter(item => item.type === "file" && item.name.endsWith(".txt"))
-          .map(item => ({ name: item.name, url: item.download_url }));
-      } catch (e) {
-        console.warn("⚠️ 使用后备列表，原因：", e.message);
-        // 把后备文件名转成相对路径
-        return fallbackFiles.map(f => ({ name: f, url: f }));
-      }
-    }
-
-    /* ---------- ⑥ 初始化下拉框 ---------- */
-    async function initNovelSelect() {
-      const fileList = await fetchNovelFiles();
-      novelSelect.innerHTML = "";
-      fileList.forEach((file, i) => {
-        const opt = document.createElement("option");
-        opt.value = file.url;          // 保存真实 URL
-        opt.textContent = file.name;   // 显示文件名
-        novelSelect.appendChild(opt);
+    function initNovelSelect() {
+      novelFiles.forEach((file) => {
+        const option = document.createElement("option");
+        option.value = file;
+        option.textContent = file;
+        novelSelect.appendChild(option);
       });
-      // 默认加载第一本
-      loadNovel(novelSelect.value);
     }
 
-    novelSelect.addEventListener("change", () => loadNovel(novelSelect.value));
+    novelSelect.addEventListener("change", () => {
+      loadNovel(novelSelect.value);
+    });
+
     chapterSelect.addEventListener("change", () => {
       currentChapter = parseInt(chapterSelect.value);
       showChapter(currentChapter);
     });
 
-    /* ---------- ⑦ 加载小说 → 分章节 ---------- */
-    async function loadNovel(fileURL) {
+    async function loadNovel(fileName) {
       try {
-        const res = await fetch(fileURL);
-        if (!res.ok) throw new Error("加载失败");
-        const text = await res.text();
+        const response = await fetch(fileName);
+        if (!response.ok) throw new Error("加载失败");
+        const text = await response.text();
         splitChapters(text);
         currentChapter = 0;
-        chapterSelect.value = 0;
-        showChapter(0);
+        chapterSelect.value = currentChapter;
+        showChapter(currentChapter);
       } catch (e) {
         alert("加载小说失败：" + e.message);
       }
@@ -91,38 +146,40 @@
     function splitChapters(text) {
       chapters = [];
       const singleRe = /^第[\u4e00-\u9fa5\d]{1,30}(?:章|回|节|集).*$/;
-      const volChapRe= /^第[\u4e00-\u9fa5\d]{1,30}卷.*?第[\u4e00-\u9fa5\d]{1,30}(?:章|回|节|集).*$/;
+      const volChapRe = /^第[\u4e00-\u9fa5\d]{1,30}卷.*?第[\u4e00-\u9fa5\d]{1,30}(?:章|回|节|集).*$/;
+
       const lines = text.split(/\r?\n/);
-      let cur = { title: "开始", content: "" };
+      let current = { title: "开始", content: "" };
 
       for (const raw of lines) {
         const line = raw.trim();
         if (singleRe.test(line) || volChapRe.test(line)) {
-          if (cur.content) chapters.push(cur);
-          cur = { title: line, content: "" };
+          if (current.content) chapters.push(current);
+          current = { title: line, content: "" };
         } else {
-          cur.content += raw + "\n";
+          current.content += raw + "\n";
         }
       }
-      if (cur.content) chapters.push(cur);
+      if (current.content) chapters.push(current);
       populateChapterSelect();
     }
 
     function populateChapterSelect() {
       chapterSelect.innerHTML = "";
-      chapters.forEach((c, i) => {
+      chapters.forEach((chap, i) => {
         const opt = document.createElement("option");
         opt.value = i;
-        opt.textContent = c.title;
+        opt.textContent = chap.title;
         chapterSelect.appendChild(opt);
       });
     }
 
-    function showChapter(i) {
-      if (chapters[i]) textDisplay.value = chapters[i].content;
+    function showChapter(index) {
+      if (chapters[index]) {
+        textDisplay.value = chapters[index].content;
+      }
     }
 
-    /* ---------- ⑧ 朗读逻辑（与上一版相同） ---------- */
     function play() {
       if (synth.speaking || synth.pending) synth.cancel();
       const minutes = parseInt(timerInput.value);
@@ -130,27 +187,47 @@
       speakNextChapter(currentChapter);
     }
 
-    function speakNextChapter(idx) {
-      if (endTime && Date.now() >= endTime) { alert("朗读时间已到，已自动停止。"); return; }
-      if (!chapters[idx]) return;
-      currentChapter = idx;
-      chapterSelect.value = idx;
-      textDisplay.value = chapters[idx].content;
+    function speakNextChapter(index) {
+      if (endTime && Date.now() >= endTime) {
+        alert("朗读时间已到，已自动停止。");
+        return;
+      }
 
-      utterance = new SpeechSynthesisUtterance(chapters[idx].content);
+      if (!chapters[index]) return;
+      currentChapter = index;
+      chapterSelect.value = index;
+      textDisplay.value = chapters[index].content;
+
+      utterance = new SpeechSynthesisUtterance(chapters[index].content);
       utterance.lang = "zh-CN";
+
       utterance.onend = () => {
-        if (!synth.paused && (!endTime || Date.now() < endTime))
-          speakNextChapter(idx + 1);
+        utterance = null;
+        if (synth.paused) return; // 如果被手动暂停就不自动播下一章
+        if (endTime && Date.now() < endTime) {
+          speakNextChapter(currentChapter + 1);
+        }
       };
+
       synth.speak(utterance);
     }
 
-    function pause() { synth.paused ? synth.resume() : synth.pause(); }
-    function stop()  { synth.cancel(); endTime = null; }
+    function pause() {
+      if (synth.speaking && !synth.paused) {
+        synth.pause();
+      } else if (synth.paused) {
+        synth.resume();
+      }
+    }
 
-    /* ---------- ⑨ 启动 ---------- */
+    function stop() {
+      synth.cancel();
+      if (timer) clearTimeout(timer);
+      endTime = null;
+    }
+
     initNovelSelect();
+    loadNovel(novelFiles[0]);
   </script>
 </body>
 </html>
