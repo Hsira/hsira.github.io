@@ -9,10 +9,20 @@
       margin: auto;
       font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
       padding: 20px;
+      background-color: #f5f5f5;
     }
 
     h1 {
       text-align: center;
+      color: #333;
+    }
+
+    .card {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
 
     .controls {
@@ -20,17 +30,22 @@
       flex-wrap: wrap;
       gap: 10px;
       align-items: center;
-      margin-bottom: 15px;
+      margin-bottom: 10px;
     }
 
     .controls label {
       margin-right: 5px;
       white-space: nowrap;
+      font-weight: 500;
+      color: #555;
     }
 
-    select, input[type="number"] {
-      padding: 6px;
+    select, input[type="number"], input[type="file"] {
+      padding: 8px 12px;
       font-size: 14px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: white;
     }
 
     .btn-group {
@@ -41,54 +56,158 @@
     }
 
     button {
-      padding: 10px 16px;
+      padding: 10px 20px;
       font-size: 16px;
       cursor: pointer;
       border: none;
-      border-radius: 6px;
+      border-radius: 8px;
       background-color: #4CAF50;
       color: white;
-      transition: background-color 0.3s ease;
+      transition: all 0.3s ease;
+      font-weight: 500;
     }
 
     button:hover {
       background-color: #45a049;
+      transform: translateY(-1px);
+    }
+
+    button.secondary {
+      background-color: #2196F3;
+    }
+
+    button.secondary:hover {
+      background-color: #1976D2;
+    }
+
+    button.warning {
+      background-color: #FF9800;
+    }
+
+    button.warning:hover {
+      background-color: #F57C00;
+    }
+
+    button.danger {
+      background-color: #f44336;
+    }
+
+    button.danger:hover {
+      background-color: #d32f2f;
     }
 
     textarea {
       width: 100%;
-      height: 60vh;
+      height: 50vh;
       margin-top: 10px;
-      padding: 10px;
-      font-size: 15px;
-      line-height: 1.5;
+      padding: 15px;
+      font-size: 16px;
+      line-height: 1.8;
       white-space: pre-wrap;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+
+    .upload-section {
+      border: 2px dashed #ccc;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 15px;
+      cursor: pointer;
+      transition: border-color 0.3s;
+    }
+
+    .upload-section:hover {
+      border-color: #4CAF50;
+    }
+
+    .status {
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      display: none;
+    }
+
+    .status.error {
+      background: #ffebee;
+      color: #c62828;
+      display: block;
+    }
+
+    .status.success {
+      background: #e8f5e9;
+      color: #2e7d32;
+      display: block;
+    }
+
+    .status.info {
+      background: #e3f2fd;
+      color: #1565c0;
+      display: block;
     }
   </style>
 </head>
 <body>
   <h1>📖 听书小助手</h1>
 
-  <div class="controls">
-    <label for="folderSelect">📚 选择小说：</label>
-    <select id="folderSelect"></select>
+  <div id="statusMessage" class="status"></div>
 
-    <label for="novelSelect">📄 选择文件：</label>
-    <select id="novelSelect"></select>
+  <div class="card">
+    <h3 style="margin-top: 0;">📁 上传本地小说</h3>
+    <div class="upload-section">
+      <input type="file" id="fileInput" accept=".txt" style="display: none;" />
+      <p style="margin: 0 0 10px 0;">点击这里或拖拽文件上传</p>
+      <button class="secondary" onclick="document.getElementById('fileInput').click()">选择文件</button>
+    </div>
   </div>
 
-  <div class="controls">
-    <label for="chapterSelect">📑 选择章节：</label>
-    <select id="chapterSelect"></select>
+  <div class="card">
+    <h3 style="margin-top: 0;">📚 GitHub 仓库小说</h3>
+    <div class="controls">
+      <label for="folderSelect">选择小说：</label>
+      <select id="folderSelect"></select>
+    </div>
+    <div class="controls">
+      <label for="novelSelect">选择文件：</label>
+      <select id="novelSelect"></select>
+    </div>
+  </div>
 
-    <label for="timer">⏱️ 定时朗读（分钟）：</label>
-    <input type="number" id="timer" value="0" min="0" />
+  <div class="card">
+    <h3 style="margin-top: 0;">🔊 朗读设置</h3>
+    <div class="controls">
+      <label for="voiceSelect">音色：</label>
+      <select id="voiceSelect"></select>
+
+      <label for="rate">速度：</label>
+      <input type="number" id="rate" value="1" min="0.5" max="2" step="0.1" style="width: 60px;" />
+    </div>
+    <div class="controls">
+      <label for="pitch">音调：</label>
+      <input type="number" id="pitch" value="1" min="0.5" max="2" step="0.1" style="width: 60px;" />
+
+      <label for="volume">音量：</label>
+      <input type="number" id="volume" value="1" min="0" max="1" step="0.1" style="width: 60px;" />
+    </div>
+    <div class="controls">
+      <label for="timer">定时朗读（分钟）：</label>
+      <input type="number" id="timer" value="0" min="0" />
+    </div>
+    <div class="controls">
+      <label for="chapterSelect">选择章节：</label>
+      <select id="chapterSelect"></select>
+    </div>
   </div>
 
   <div class="btn-group">
     <button onclick="play()">▶️ 播放</button>
-    <button onclick="pause()">⏸️ 暂停 / 继续</button>
-    <button onclick="stop()">⏹️ 停止</button>
+    <button class="warning" onclick="pause()">⏸️ 暂停 / 继续</button>
+    <button class="danger" onclick="stop()">⏹️ 停止</button>
+    <button class="secondary" onclick="prevChapter()">⬅️ 上一章</button>
+    <button class="secondary" onclick="nextChapter()">➡️ 下一章</button>
   </div>
 
   <textarea id="textDisplay" readonly></textarea>
@@ -96,36 +215,85 @@
   <script>
     const GITHUB_USER = "hsira";
     const GITHUB_REPO = "hsira.github.io";
-    const GITHUB_PATH = "novels"; // 所有小说放在 /novels 文件夹下
+    const GITHUB_PATH = "novels";
 
     const folderSelect = document.getElementById("folderSelect");
     const novelSelect = document.getElementById("novelSelect");
     const chapterSelect = document.getElementById("chapterSelect");
     const textDisplay = document.getElementById("textDisplay");
     const timerInput = document.getElementById("timer");
+    const voiceSelect = document.getElementById("voiceSelect");
+    const rateInput = document.getElementById("rate");
+    const pitchInput = document.getElementById("pitch");
+    const volumeInput = document.getElementById("volume");
+    const fileInput = document.getElementById("fileInput");
+    const statusMessage = document.getElementById("statusMessage");
 
     let chapters = [];
     let currentChapter = 0;
     const synth = window.speechSynthesis;
     let utterance = null;
     let endTime = null;
+    let voices = [];
+
+    function showStatus(message, type = "info") {
+      statusMessage.textContent = message;
+      statusMessage.className = "status " + type;
+      setTimeout(() => {
+        if (type !== "error") statusMessage.className = "status";
+      }, 3000);
+    }
+
+    function loadVoices() {
+      voices = synth.getVoices().filter(voice => voice.lang.startsWith("zh"));
+      voiceSelect.innerHTML = "";
+      voices.forEach((voice, index) => {
+        const opt = document.createElement("option");
+        opt.value = index;
+        opt.textContent = voice.name;
+        voiceSelect.appendChild(opt);
+      });
+      if (voices.length === 0) {
+        const opt = document.createElement("option");
+        opt.value = "-1";
+        opt.textContent = "默认";
+        voiceSelect.appendChild(opt);
+      }
+    }
+
+    synth.onvoiceschanged = loadVoices;
+    loadVoices();
 
     async function listFolders() {
-      const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${GITHUB_PATH}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      return data.filter(item => item.type === "dir").map(item => item.name);
+      try {
+        const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${GITHUB_PATH}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (!Array.isArray(data)) throw new Error("API 返回格式错误");
+        return data.filter(item => item.type === "dir").map(item => item.name);
+      } catch (e) {
+        showStatus("无法从 GitHub 加载文件夹列表：" + e.message, "error");
+        return [];
+      }
     }
 
     async function listTxtFiles(folderName) {
-      const path = `${GITHUB_PATH}/${folderName}`;
-      const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${path}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      return data.filter(item => item.name.endsWith(".txt")).map(item => ({
-        name: item.name,
-        url: item.download_url
-      }));
+      try {
+        const path = `${GITHUB_PATH}/${folderName}`;
+        const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${path}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (!Array.isArray(data)) throw new Error("API 返回格式错误");
+        return data.filter(item => item.name.endsWith(".txt")).map(item => ({
+          name: item.name,
+          url: item.download_url
+        }));
+      } catch (e) {
+        showStatus("无法加载文件列表：" + e.message, "error");
+        return [];
+      }
     }
 
     async function initFolderSelect() {
@@ -137,7 +305,9 @@
         opt.textContent = folder;
         folderSelect.appendChild(opt);
       });
-      await updateNovelSelect(folderSelect.value);
+      if (folders.length > 0) {
+        await updateNovelSelect(folderSelect.value);
+      }
     }
 
     folderSelect.addEventListener("change", async () => {
@@ -167,21 +337,41 @@
 
     async function loadNovel(fileURL) {
       try {
+        showStatus("正在加载小说...", "info");
         const res = await fetch(fileURL);
-        if (!res.ok) throw new Error("加载失败");
+        if (!res.ok) throw new Error("HTTP " + res.status);
         const text = await res.text();
         splitChapters(text);
         currentChapter = 0;
         chapterSelect.value = 0;
         showChapter(0);
+        showStatus("小说加载成功，共 " + chapters.length + " 章", "success");
       } catch (e) {
-        alert("加载小说失败：" + e.message);
+        showStatus("加载小说失败：" + e.message, "error");
       }
     }
 
+    fileInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          splitChapters(event.target.result);
+          currentChapter = 0;
+          chapterSelect.value = 0;
+          showChapter(0);
+          showStatus("文件 " + file.name + " 加载成功，共 " + chapters.length + " 章", "success");
+        };
+        reader.onerror = () => {
+          showStatus("文件读取失败", "error");
+        };
+        reader.readAsText(file, "UTF-8");
+      }
+    });
+
     function splitChapters(text) {
       chapters = [];
-      const singleRe = /^第[\u4e00-\u9fa5\d]{1,30}(章|回|节|集).*$/;
+      const singleRe = /^第[\u4e00-\u9fa5\d]{1,30}(章|回|节|集|卷|篇).*$/;
       const volChapRe = /^第[\u4e00-\u9fa5\d]{1,30}卷.*?第[\u4e00-\u9fa5\d]{1,30}(章|回|节|集).*$/;
       const lines = text.split(/\r?\n/);
       let cur = { title: "开始", content: "" };
@@ -218,20 +408,32 @@
       const minutes = parseInt(timerInput.value);
       endTime = minutes > 0 ? Date.now() + minutes * 60000 : null;
       speakNextChapter(currentChapter);
+      showStatus("开始朗读...", "info");
     }
 
     function speakNextChapter(idx) {
       if (endTime && Date.now() >= endTime) {
-        alert("朗读时间已到，已自动停止。");
+        showStatus("朗读时间已到，已自动停止。", "info");
         return;
       }
-      if (!chapters[idx]) return;
+      if (!chapters[idx]) {
+        showStatus("朗读完毕！", "success");
+        return;
+      }
       currentChapter = idx;
       chapterSelect.value = idx;
       textDisplay.value = chapters[idx].content;
 
       utterance = new SpeechSynthesisUtterance(chapters[idx].content);
       utterance.lang = "zh-CN";
+      utterance.rate = parseFloat(rateInput.value);
+      utterance.pitch = parseFloat(pitchInput.value);
+      utterance.volume = parseFloat(volumeInput.value);
+      
+      if (voices.length > 0 && voiceSelect.value !== "-1") {
+        utterance.voice = voices[parseInt(voiceSelect.value)];
+      }
+
       utterance.onend = () => {
         if (!synth.paused && (!endTime || Date.now() < endTime))
           speakNextChapter(idx + 1);
@@ -242,14 +444,35 @@
     function pause() {
       if (synth.speaking && !synth.paused) {
         synth.pause();
+        showStatus("已暂停", "info");
       } else if (synth.paused) {
         synth.resume();
+        showStatus("继续朗读...", "info");
       }
     }
 
     function stop() {
       synth.cancel();
       endTime = null;
+      showStatus("已停止", "info");
+    }
+
+    function prevChapter() {
+      if (currentChapter > 0) {
+        stop();
+        currentChapter--;
+        chapterSelect.value = currentChapter;
+        showChapter(currentChapter);
+      }
+    }
+
+    function nextChapter() {
+      if (currentChapter < chapters.length - 1) {
+        stop();
+        currentChapter++;
+        chapterSelect.value = currentChapter;
+        showChapter(currentChapter);
+      }
     }
 
     initFolderSelect();
