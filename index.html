@@ -344,6 +344,41 @@
       font-weight: 400;
     }
 
+    .upload-section.compact {
+      padding: 1.5rem;
+    }
+
+    .upload-section.compact .upload-icon {
+      display: none;
+    }
+
+    .collapsible .card-title {
+      cursor: pointer;
+      user-select: none;
+      justify-content: space-between;
+    }
+
+    .toggle-icon {
+      transition: transform 0.3s ease;
+      font-size: 0.8rem;
+    }
+
+    .collapsible.collapsed .toggle-icon {
+      transform: rotate(-90deg);
+    }
+
+    .collapsible-content {
+      overflow: hidden;
+      transition: max-height 0.3s ease, opacity 0.3s ease;
+      max-height: 500px;
+      opacity: 1;
+    }
+
+    .collapsible.collapsed .collapsible-content {
+      max-height: 0;
+      opacity: 0;
+    }
+
     .btn {
       display: inline-flex;
       align-items: center;
@@ -624,18 +659,6 @@
 
     <div class="card">
       <div class="card-title">
-        <span>上传本地小说</span>
-      </div>
-      <div class="upload-section" onclick="document.getElementById('fileInput').click()">
-        <div class="upload-icon">📄</div>
-        <div class="upload-text">点击或拖拽文件到这里</div>
-        <button class="btn btn-primary">选择文件</button>
-        <input type="file" id="fileInput" accept=".txt" class="hidden-input">
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">
         <span>GitHub 仓库小说</span>
       </div>
       <div class="controls-group">
@@ -652,7 +675,7 @@
 
     <div class="card">
       <div class="card-title">
-        <span>朗读设置</span>
+        <span>朗读控制</span>
       </div>
       <div class="controls-group">
         <div class="control-item">
@@ -694,6 +717,20 @@
         <span>小说内容</span>
       </div>
       <textarea id="textDisplay" class="text-display" readonly placeholder="选择小说文件后，内容将显示在这里..."></textarea>
+    </div>
+
+    <div class="card collapsible" id="uploadCard">
+      <div class="card-title" onclick="toggleUpload()">
+        <span>📁 上传本地小说</span>
+        <span class="toggle-icon" id="toggleIcon">▼</span>
+      </div>
+      <div class="collapsible-content" id="uploadContent">
+        <div class="upload-section compact" onclick="document.getElementById('fileInput').click()">
+          <div class="upload-text">点击选择本地小说文件</div>
+          <button class="btn btn-primary">选择文件</button>
+          <input type="file" id="fileInput" accept=".txt" class="hidden-input">
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1085,6 +1122,11 @@
         chapterSelect.value = currentChapter;
         showChapter(currentChapter);
       }
+    }
+
+    function toggleUpload() {
+      const uploadCard = document.getElementById('uploadCard');
+      uploadCard.classList.toggle('collapsed');
     }
 
     initFolderSelect();
