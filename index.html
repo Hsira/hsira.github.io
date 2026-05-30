@@ -657,6 +657,20 @@
       <span id="statusText"></span>
     </div>
 
+    <div class="card collapsible collapsed" id="uploadCard">
+      <div class="card-title" onclick="toggleUpload()">
+        <span>📁 上传本地小说</span>
+        <span class="toggle-icon" id="toggleIcon">▼</span>
+      </div>
+      <div class="collapsible-content" id="uploadContent">
+        <div class="upload-section compact" onclick="document.getElementById('fileInput').click()">
+          <div class="upload-text">点击选择本地小说文件</div>
+          <button class="btn btn-primary">选择文件</button>
+          <input type="file" id="fileInput" accept=".txt" class="hidden-input">
+        </div>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-title">
         <span>GitHub 仓库小说</span>
@@ -717,20 +731,6 @@
         <span>小说内容</span>
       </div>
       <textarea id="textDisplay" class="text-display" readonly placeholder="选择小说文件后，内容将显示在这里..."></textarea>
-    </div>
-
-    <div class="card collapsible" id="uploadCard">
-      <div class="card-title" onclick="toggleUpload()">
-        <span>📁 上传本地小说</span>
-        <span class="toggle-icon" id="toggleIcon">▼</span>
-      </div>
-      <div class="collapsible-content" id="uploadContent">
-        <div class="upload-section compact" onclick="document.getElementById('fileInput').click()">
-          <div class="upload-text">点击选择本地小说文件</div>
-          <button class="btn btn-primary">选择文件</button>
-          <input type="file" id="fileInput" accept=".txt" class="hidden-input">
-        </div>
-      </div>
     </div>
   </div>
 
