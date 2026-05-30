@@ -316,6 +316,11 @@
 
     async function updateNovelSelect(folderName) {
       const files = await listTxtFiles(folderName);
+      files.sort((a, b) => {
+        const numA = parseInt(a.name.match(/(\d+)/)?.[1] || "0");
+        const numB = parseInt(b.name.match(/(\d+)/)?.[1] || "0");
+        return numA - numB;
+      });
       novelSelect.innerHTML = "";
       files.forEach(file => {
         const opt = document.createElement("option");
