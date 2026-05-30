@@ -1,216 +1,443 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <title>听书小助手</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>听书助手</title>
   <style>
-    body {
-      max-width: 700px;
-      margin: auto;
-      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      padding: 20px;
-      background-color: #f5f5f5;
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
 
-    h1 {
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: linear-gradient(180deg, #0f0f23 0%, #1a1a2e 100%);
+      min-height: 100vh;
+      padding: 4rem 2rem;
+      color: #2d3748;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 20% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                  radial-gradient(circle at 80% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%);
+      z-index: -1;
+    }
+
+    .container {
+      max-width: 950px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .header {
       text-align: center;
-      color: #333;
+      margin-bottom: 3.5rem;
+      color: white;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+      color: #ffffff;
+    }
+
+    .header p {
+      font-size: 1rem;
+      opacity: 0.6;
+      font-weight: 400;
+      letter-spacing: 0.01em;
+    }
+
+    .status {
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+      display: none;
+      align-items: center;
+      gap: 0.75rem;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    .status.show {
+      display: flex;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .status.error {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.2);
+      color: #fecaca;
+    }
+
+    .status.success {
+      background: rgba(34, 197, 94, 0.1);
+      border-color: rgba(34, 197, 94, 0.2);
+      color: #bbf7d0;
+    }
+
+    .status.info {
+      background: rgba(59, 130, 246, 0.1);
+      border-color: rgba(59, 130, 246, 0.2);
+      color: #bfdbfe;
+    }
+
+    .status-icon {
+      font-size: 1.5rem;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
     }
 
     .card {
-      background: white;
-      border-radius: 10px;
-      padding: 20px;
-      margin-bottom: 15px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+      transition: all 0.2s ease-out;
     }
 
-    .controls {
+    .card-title {
+      font-size: 1rem;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .card-title span:first-child {
+      font-size: 1.25rem;
+      opacity: 0.8;
+    }
+
+    .upload-section {
+      border: 1px dashed rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      padding: 2.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease-out;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .upload-section:hover {
+      border-color: rgba(255, 255, 255, 0.35);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .upload-icon {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      opacity: 0.7;
+    }
+
+    .upload-text {
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+      font-weight: 400;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem 1.5rem;
+      font-size: 0.95rem;
+      font-weight: 500;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.15s ease-out;
+      gap: 0.5rem;
+    }
+
+    .btn-primary {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-primary:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: rgba(255, 255, 255, 0.7);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #ffffff;
+    }
+
+    .btn-warning {
+      background: rgba(234, 179, 8, 0.1);
+      color: #fde68a;
+      border-color: rgba(234, 179, 8, 0.2);
+    }
+
+    .btn-warning:hover {
+      background: rgba(234, 179, 8, 0.15);
+    }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.1);
+      color: #fecaca;
+      border-color: rgba(239, 68, 68, 0.2);
+    }
+
+    .btn-danger:hover {
+      background: rgba(239, 68, 68, 0.15);
+    }
+
+    .controls-group {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-      margin-bottom: 10px;
+      gap: 1.25rem;
+      margin-bottom: 1.75rem;
     }
 
-    .controls label {
-      margin-right: 5px;
-      white-space: nowrap;
+    .control-item {
+      flex: 1 1 220px;
+      min-width: 220px;
+    }
+
+    .control-item label {
+      display: block;
+      font-size: 0.85rem;
       font-weight: 500;
-      color: #555;
+      color: rgba(255, 255, 255, 0.5);
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
 
-    select, input[type="number"], input[type="file"] {
-      padding: 8px 12px;
-      font-size: 14px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      background: white;
+    .control-item select,
+    .control-item input[type="number"] {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-size: 0.95rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.04);
+      color: rgba(255, 255, 255, 0.9);
+      transition: all 0.15s ease-out;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .control-item select option {
+      background: #1a1a2e;
+      color: white;
+    }
+
+    .control-item select:focus,
+    .control-item input[type="number"]:focus {
+      outline: none;
+      border-color: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .control-item select::placeholder,
+    .control-item input[type="number"]::placeholder {
+      color: rgba(255, 255, 255, 0.3);
     }
 
     .btn-group {
       display: flex;
-      gap: 10px;
-      margin-top: 10px;
       flex-wrap: wrap;
+      gap: 0.875rem;
+      margin-top: 1rem;
     }
 
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      cursor: pointer;
-      border: none;
-      border-radius: 8px;
-      background-color: #4CAF50;
-      color: white;
-      transition: all 0.3s ease;
-      font-weight: 500;
+    .btn-group .btn {
+      flex: 1 1 auto;
+      min-width: 130px;
     }
 
-    button:hover {
-      background-color: #45a049;
-      transform: translateY(-1px);
-    }
-
-    button.secondary {
-      background-color: #2196F3;
-    }
-
-    button.secondary:hover {
-      background-color: #1976D2;
-    }
-
-    button.warning {
-      background-color: #FF9800;
-    }
-
-    button.warning:hover {
-      background-color: #F57C00;
-    }
-
-    button.danger {
-      background-color: #f44336;
-    }
-
-    button.danger:hover {
-      background-color: #d32f2f;
-    }
-
-    textarea {
+    .text-display {
       width: 100%;
-      height: 50vh;
-      margin-top: 10px;
-      padding: 15px;
-      font-size: 16px;
+      min-height: 400px;
+      padding: 1.5rem;
+      font-size: 0.95rem;
       line-height: 1.8;
-      white-space: pre-wrap;
-      border: 1px solid #ddd;
-      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      color: rgba(255, 255, 255, 0.8);
       resize: vertical;
-      box-sizing: border-box;
+      font-family: inherit;
+      transition: all 0.15s ease-out;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
     }
 
-    .upload-section {
-      border: 2px dashed #ccc;
-      border-radius: 8px;
-      padding: 20px;
-      text-align: center;
-      margin-bottom: 15px;
-      cursor: pointer;
-      transition: border-color 0.3s;
+    .text-display:focus {
+      outline: none;
+      border-color: rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.05);
     }
 
-    .upload-section:hover {
-      border-color: #4CAF50;
+    .text-display::placeholder {
+      color: rgba(255, 255, 255, 0.3);
     }
 
-    .status {
-      padding: 10px;
-      border-radius: 6px;
-      margin-bottom: 10px;
+    .hidden-input {
       display: none;
     }
 
-    .status.error {
-      background: #ffebee;
-      color: #c62828;
-      display: block;
-    }
+    @media (max-width: 768px) {
+      body {
+        padding: 2rem 1rem;
+      }
 
-    .status.success {
-      background: #e8f5e9;
-      color: #2e7d32;
-      display: block;
-    }
+      .header h1 {
+        font-size: 2rem;
+      }
 
-    .status.info {
-      background: #e3f2fd;
-      color: #1565c0;
-      display: block;
+      .card {
+        padding: 1.75rem;
+        border-radius: 20px;
+      }
+
+      .upload-section {
+        padding: 2rem;
+      }
+
+      .controls-group {
+        gap: 1rem;
+      }
+
+      .control-item {
+        flex: 1 1 100%;
+      }
+
+      .btn-group .btn {
+        flex: 1 1 100%;
+      }
     }
   </style>
 </head>
 <body>
-  <h1>📖 听书小助手</h1>
+  <div class="container">
+    <div class="header">
+      <h1>听书助手</h1>
+      <p>让你的阅读体验更加轻松</p>
+    </div>
 
-  <div id="statusMessage" class="status"></div>
+    <div id="statusMessage" class="status">
+      <span class="status-icon">📢</span>
+      <span id="statusText"></span>
+    </div>
 
-  <div class="card">
-    <h3 style="margin-top: 0;">📁 上传本地小说</h3>
-    <div class="upload-section">
-      <input type="file" id="fileInput" accept=".txt" style="display: none;" />
-      <p style="margin: 0 0 10px 0;">点击这里或拖拽文件上传</p>
-      <button class="secondary" onclick="document.getElementById('fileInput').click()">选择文件</button>
+    <div class="card">
+      <div class="card-title">
+        <span>上传本地小说</span>
+      </div>
+      <div class="upload-section" onclick="document.getElementById('fileInput').click()">
+        <div class="upload-text">点击或拖拽文件到这里</div>
+        <button class="btn btn-primary">选择文件</button>
+        <input type="file" id="fileInput" accept=".txt" class="hidden-input">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span>GitHub 仓库小说</span>
+      </div>
+      <div class="controls-group">
+        <div class="control-item">
+          <label for="folderSelect">选择小说</label>
+          <select id="folderSelect"></select>
+        </div>
+        <div class="control-item">
+          <label for="novelSelect">选择文件</label>
+          <select id="novelSelect"></select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span>朗读设置</span>
+      </div>
+      <div class="controls-group">
+        <div class="control-item">
+          <label for="voiceSelect">音色</label>
+          <select id="voiceSelect"></select>
+        </div>
+        <div class="control-item">
+          <label for="rate">速度</label>
+          <input type="number" id="rate" value="1" min="0.5" max="2" step="0.1">
+        </div>
+        <div class="control-item">
+          <label for="pitch">音调</label>
+          <input type="number" id="pitch" value="1" min="0.5" max="2" step="0.1">
+        </div>
+        <div class="control-item">
+          <label for="volume">音量</label>
+          <input type="number" id="volume" value="1" min="0" max="1" step="0.1">
+        </div>
+        <div class="control-item">
+          <label for="timer">定时朗读（分钟）</label>
+          <input type="number" id="timer" value="0" min="0">
+        </div>
+        <div class="control-item">
+          <label for="chapterSelect">选择章节</label>
+          <select id="chapterSelect"></select>
+        </div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="play()">播放</button>
+        <button class="btn btn-warning" onclick="pause()">暂停 / 继续</button>
+        <button class="btn btn-danger" onclick="stop()">停止</button>
+        <button class="btn btn-secondary" onclick="prevChapter()">上一章</button>
+        <button class="btn btn-secondary" onclick="nextChapter()">下一章</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span>小说内容</span>
+      </div>
+      <textarea id="textDisplay" class="text-display" readonly placeholder="选择小说文件后，内容将显示在这里..."></textarea>
     </div>
   </div>
-
-  <div class="card">
-    <h3 style="margin-top: 0;">📚 GitHub 仓库小说</h3>
-    <div class="controls">
-      <label for="folderSelect">选择小说：</label>
-      <select id="folderSelect"></select>
-    </div>
-    <div class="controls">
-      <label for="novelSelect">选择文件：</label>
-      <select id="novelSelect"></select>
-    </div>
-  </div>
-
-  <div class="card">
-    <h3 style="margin-top: 0;">🔊 朗读设置</h3>
-    <div class="controls">
-      <label for="voiceSelect">音色：</label>
-      <select id="voiceSelect"></select>
-
-      <label for="rate">速度：</label>
-      <input type="number" id="rate" value="1" min="0.5" max="2" step="0.1" style="width: 60px;" />
-    </div>
-    <div class="controls">
-      <label for="pitch">音调：</label>
-      <input type="number" id="pitch" value="1" min="0.5" max="2" step="0.1" style="width: 60px;" />
-
-      <label for="volume">音量：</label>
-      <input type="number" id="volume" value="1" min="0" max="1" step="0.1" style="width: 60px;" />
-    </div>
-    <div class="controls">
-      <label for="timer">定时朗读（分钟）：</label>
-      <input type="number" id="timer" value="0" min="0" />
-    </div>
-    <div class="controls">
-      <label for="chapterSelect">选择章节：</label>
-      <select id="chapterSelect"></select>
-    </div>
-  </div>
-
-  <div class="btn-group">
-    <button onclick="play()">▶️ 播放</button>
-    <button class="warning" onclick="pause()">⏸️ 暂停 / 继续</button>
-    <button class="danger" onclick="stop()">⏹️ 停止</button>
-    <button class="secondary" onclick="prevChapter()">⬅️ 上一章</button>
-    <button class="secondary" onclick="nextChapter()">➡️ 下一章</button>
-  </div>
-
-  <textarea id="textDisplay" readonly></textarea>
 
   <script>
     const GITHUB_USER = "hsira";
@@ -228,6 +455,7 @@
     const volumeInput = document.getElementById("volume");
     const fileInput = document.getElementById("fileInput");
     const statusMessage = document.getElementById("statusMessage");
+    const statusText = document.getElementById("statusText");
 
     let chapters = [];
     let currentChapter = 0;
@@ -237,10 +465,10 @@
     let voices = [];
 
     function showStatus(message, type = "info") {
-      statusMessage.textContent = message;
-      statusMessage.className = "status " + type;
+      statusText.textContent = message;
+      statusMessage.className = `status ${type} show`;
       setTimeout(() => {
-        if (type !== "error") statusMessage.className = "status";
+        statusMessage.classList.remove("show");
       }, 3000);
     }
 
@@ -266,13 +494,26 @@
 
     async function listFolders() {
       try {
-        const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${GITHUB_PATH}`;
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${encodeURIComponent(GITHUB_PATH)}`;
+        const res = await fetch(url, {
+          headers: {
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        });
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`HTTP ${res.status}: ${errorText.substring(0, 100)}`);
+        }
         const data = await res.json();
-        if (!Array.isArray(data)) throw new Error("API 返回格式错误");
-        return data.filter(item => item.type === "dir").map(item => item.name);
+        if (!Array.isArray(data)) {
+          console.error("API 返回不是数组:", data);
+          throw new Error("API 返回格式错误");
+        }
+        const folders = data.filter(item => item.type === "dir").map(item => item.name);
+        console.log(`找到 ${folders.length} 个文件夹`, folders);
+        return folders;
       } catch (e) {
+        console.error("加载文件夹列表失败:", e);
         showStatus("无法从 GitHub 加载文件夹列表：" + e.message, "error");
         return [];
       }
@@ -280,17 +521,30 @@
 
     async function listTxtFiles(folderName) {
       try {
-        const path = `${GITHUB_PATH}/${folderName}`;
+        const path = `${GITHUB_PATH}/${encodeURIComponent(folderName)}`;
         const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${path}`;
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const res = await fetch(url, {
+          headers: {
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        });
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`HTTP ${res.status}: ${errorText.substring(0, 100)}`);
+        }
         const data = await res.json();
-        if (!Array.isArray(data)) throw new Error("API 返回格式错误");
-        return data.filter(item => item.name.endsWith(".txt")).map(item => ({
+        if (!Array.isArray(data)) {
+          console.error("API 返回不是数组:", data);
+          throw new Error("API 返回格式错误");
+        }
+        const txtFiles = data.filter(item => item.type === "file" && item.name.endsWith(".txt"));
+        console.log(`找到 ${txtFiles.length} 个txt文件`, txtFiles);
+        return txtFiles.map(item => ({
           name: item.name,
           url: item.download_url
         }));
       } catch (e) {
+        console.error("加载文件列表失败:", e);
         showStatus("无法加载文件列表：" + e.message, "error");
         return [];
       }
@@ -316,11 +570,6 @@
 
     async function updateNovelSelect(folderName) {
       const files = await listTxtFiles(folderName);
-      files.sort((a, b) => {
-        const numA = parseInt(a.name.match(/(\d+)/)?.[1] || "0");
-        const numB = parseInt(b.name.match(/(\d+)/)?.[1] || "0");
-        return numA - numB;
-      });
       novelSelect.innerHTML = "";
       files.forEach(file => {
         const opt = document.createElement("option");
@@ -434,7 +683,7 @@
       utterance.rate = parseFloat(rateInput.value);
       utterance.pitch = parseFloat(pitchInput.value);
       utterance.volume = parseFloat(volumeInput.value);
-      
+
       if (voices.length > 0 && voiceSelect.value !== "-1") {
         utterance.voice = voices[parseInt(voiceSelect.value)];
       }
