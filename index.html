@@ -738,6 +738,15 @@
     const GITHUB_USER = "hsira";
     const GITHUB_REPO = "hsira.github.io";
     const GITHUB_PATH = "novels";
+    const BASE_URL = "https://raw.githubusercontent.com/hsira/hsira.github.io/main";
+    
+    // 小说数据 - 可以在这里添加你的小说
+    const NOVELS = {
+      "凡人": ["1.txt", "fanren500.txt", "fanren1000.txt", "fanren1500.txt", "fanren2000.txt", "fanren2464.txt"],
+      "茅山": [],
+      "蛊真人": ["1.txt", "guzhenren100.txt", "guzhenren200.txt", "guzhenren300.txt", "guzhenren400.txt", "guzhenren500.txt", "guzhenren600.txt", "guzhenren700.txt", "guzhenren800.txt", "guzhenren900.txt", "guzhenren1000.txt", "guzhenren1100.txt", "guzhenren1200.txt", "guzhenren1300.txt", "guzhenren1400.txt", "guzhenren1500.txt", "guzhenren1600.txt", "guzhenren1700.txt", "guzhenren1800.txt", "guzhenren1900.txt", "guzhenren2000.txt", "guzhenren2100.txt", "guzhenren2200.txt", "guzhenren2294.txt"],
+      "超级惊悚直播": []
+    };
 
     const folderSelect = document.getElementById("folderSelect");
     const novelSelect = document.getElementById("novelSelect");
@@ -878,54 +887,23 @@
 
     async function listFolders() {
       try {
-        const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${encodeURIComponent(GITHUB_PATH)}`;
-        const res = await fetch(url, {
-          headers: {
-            'Accept': 'application/vnd.github.v3+json'
-          }
-        });
-        if (!res.ok) {
-          const errorText = await res.text();
-          throw new Error(`HTTP ${res.status}: ${errorText.substring(0, 100)}`);
-        }
-        const data = await res.json();
-        if (!Array.isArray(data)) {
-          console.error("API 返回不是数组:", data);
-          throw new Error("API 返回格式错误");
-        }
-        const folders = data.filter(item => item.type === "dir").map(item => item.name);
+        const folders = Object.keys(NOVELS);
         console.log(`找到 ${folders.length} 个文件夹`, folders);
         return folders;
       } catch (e) {
         console.error("加载文件夹列表失败:", e);
-        showStatus("无法从 GitHub 加载文件夹列表：" + e.message, "error");
+        showStatus("无法加载文件夹列表：" + e.message, "error");
         return [];
       }
     }
 
     async function listTxtFiles(folderName) {
       try {
-        const path = `${GITHUB_PATH}/${encodeURIComponent(folderName)}`;
-        const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${path}`;
-        const res = await fetch(url, {
-          headers: {
-            'Accept': 'application/vnd.github.v3+json'
-          }
-        });
-        if (!res.ok) {
-          const errorText = await res.text();
-          throw new Error(`HTTP ${res.status}: ${errorText.substring(0, 100)}`);
-        }
-        const data = await res.json();
-        if (!Array.isArray(data)) {
-          console.error("API 返回不是数组:", data);
-          throw new Error("API 返回格式错误");
-        }
-        const txtFiles = data.filter(item => item.type === "file" && item.name.endsWith(".txt"));
-        console.log(`找到 ${txtFiles.length} 个txt文件`, txtFiles);
-        return txtFiles.map(item => ({
-          name: item.name,
-          url: item.download_url
+        const files = NOVELS[folderName] || [];
+        console.log(`找到 ${files.length} 个txt文件`, files);
+        return files.map(fileName => ({
+          name: fileName,
+          url: `${BASE_URL}/${GITHUB_PATH}/${encodeURIComponent(folderName)}/${encodeURIComponent(fileName)}`
         }));
       } catch (e) {
         console.error("加载文件列表失败:", e);
